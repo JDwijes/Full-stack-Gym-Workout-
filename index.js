@@ -1,62 +1,80 @@
-'use strict';
-module.exports = balanced;
-function balanced(a, b, str) {
-  if (a instanceof RegExp) a = maybeMatch(a, str);
-  if (b instanceof RegExp) b = maybeMatch(b, str);
+/*!
+ * body-parser
+ * Copyright(c) 2014-2015 Douglas Christopher Wilson
+ * MIT Licensed
+ */
 
-  var r = range(a, b, str);
+'use strict'
 
-  return r && {
-    start: r[0],
-    end: r[1],
-    pre: str.slice(0, r[0]),
-    body: str.slice(r[0] + a.length, r[1]),
-    post: str.slice(r[1] + b.length)
-  };
-}
+/**
+ * @typedef Parsers
+ * @type {function}
+ * @property {function} json
+ * @property {function} raw
+ * @property {function} text
+ * @property {function} urlencoded
+ */
 
-function maybeMatch(reg, str) {
-  var m = str.match(reg);
-  return m ? m[0] : null;
-}
+/**
+ * Module exports.
+ * @type {Parsers}
+ */
 
-balanced.range = range;
-function range(a, b, str) {
-  var begs, beg, left, right, result;
-  var ai = str.indexOf(a);
-  var bi = str.indexOf(b, ai + 1);
-  var i = ai;
+exports = module.exports = bodyParser
 
-  if (ai >= 0 && bi > 0) {
-    if(a===b) {
-      return [ai, bi];
-    }
-    begs = [];
-    left = str.length;
+/**
+ * JSON parser.
+ * @public
+ */
 
-    while (i >= 0 && !result) {
-      if (i == ai) {
-        begs.push(i);
-        ai = str.indexOf(a, i + 1);
-      } else if (begs.length == 1) {
-        result = [ begs.pop(), bi ];
-      } else {
-        beg = begs.pop();
-        if (beg < left) {
-          left = beg;
-          right = bi;
-        }
+Object.defineProperty(exports, 'json', {
+  configurable: true,
+  enumerable: true,
+  get: () => require('./lib/types/json')
+})
 
-        bi = str.indexOf(b, i + 1);
-      }
+/**
+ * Raw parser.
+ * @public
+ */
 
-      i = ai < bi && ai >= 0 ? ai : bi;
-    }
+Object.defineProperty(exports, 'raw', {
+  configurable: true,
+  enumerable: true,
+  get: () => require('./lib/types/raw')
+})
 
-    if (begs.length) {
-      result = [ left, right ];
-    }
-  }
+/**
+ * Text parser.
+ * @public
+ */
 
-  return result;
+Object.defineProperty(exports, 'text', {
+  configurable: true,
+  enumerable: true,
+  get: () => require('./lib/types/text')
+})
+
+/**
+ * URL-encoded parser.
+ * @public
+ */
+
+Object.defineProperty(exports, 'urlencoded', {
+  configurable: true,
+  enumerable: true,
+  get: () => require('./lib/types/urlencoded')
+})
+
+/**
+ * Create a middleware to parse json and urlencoded bodies.
+ *
+ * @param {object} [options]
+ * @return {function}
+ * @deprecated
+ * @public
+ */
+
+function bodyParser () {
+  throw new Error('The bodyParser() generic has been split into individual middleware to use instead.')
 }
