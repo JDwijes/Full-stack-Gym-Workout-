@@ -1,170 +1,63 @@
-/*!
- * bytes
- * Copyright(c) 2012-2014 TJ Holowaychuk
- * Copyright(c) 2015 Jed Watson
- * MIT Licensed
- */
-
 'use strict';
 
-/**
- * Module exports.
- * @public
- */
+var callBind = require('../');
+var hasStrictMode = require('has-strict-mode')();
+var forEach = require('for-each');
+var inspect = require('object-inspect');
+var v = require('es-value-fixtures');
 
-module.exports = bytes;
-module.exports.format = format;
-module.exports.parse = parse;
+var test = require('tape');
 
-/**
- * Module variables.
- * @private
- */
+test('callBindBasic', function (t) {
+	forEach(v.nonFunctions, function (nonFunction) {
+		t['throws'](
+			// @ts-expect-error
+			function () { callBind([nonFunction]); },
+			TypeError,
+			inspect(nonFunction) + ' is not a function'
+		);
+	});
 
-var formatThousandsRegExp = /\B(?=(\d{3})+(?!\d))/g;
+	var sentinel = { sentinel: true };
+	/** @type {<T, A extends number, B extends number>(this: T, a: A, b: B) => [T | undefined, A, B]} */
+	var func = function (a, b) {
+		// eslint-disable-next-line no-invalid-this
+		return [!hasStrictMode && this === global ? undefined : this, a, b];
+	};
+	t.equal(func.length, 2, 'original function length is 2');
 
-var formatDecimalsRegExp = /(?:\.0*|(\.[^0]+)0+)$/;
+	/** type {(thisArg: unknown, a: number, b: number) => [unknown, number, number]} */
+	var bound = callBind([func]);
+	/** type {((a: number, b: number) => [typeof sentinel, typeof a, typeof b])} */
+	var boundR = callBind([func, sentinel]);
+	/** type {((b: number) => [typeof sentinel, number, typeof b])} */
+	var boundArg = callBind([func, sentinel, /** @type {const} */ (1)]);
 
-var map = {
-  b:  1,
-  kb: 1 << 10,
-  mb: 1 << 20,
-  gb: 1 << 30,
-  tb: Math.pow(1024, 4),
-  pb: Math.pow(1024, 5),
-};
+	// @ts-expect-error
+	t.deepEqual(bound(), [undefined, undefined, undefined], 'bound func with no args');
 
-var parseRegExp = /^((-|\+)?(\d+(?:\.\d+)?)) *(kb|mb|gb|tb|pb)$/i;
+	// @ts-expect-error
+	t.deepEqual(func(), [undefined, undefined, undefined], 'unbound func with too few args');
+	// @ts-expect-error
+	t.deepEqual(bound(1, 2), [hasStrictMode ? 1 : Object(1), 2, undefined], 'bound func too few args');
+	// @ts-expect-error
+	t.deepEqual(boundR(), [sentinel, undefined, undefined], 'bound func with receiver, with too few args');
+	// @ts-expect-error
+	t.deepEqual(boundArg(), [sentinel, 1, undefined], 'bound func with receiver and arg, with too few args');
 
-/**
- * Convert the given value in bytes into a string or parse to string to an integer in bytes.
- *
- * @param {string|number} value
- * @param {{
- *  case: [string],
- *  decimalPlaces: [number]
- *  fixedDecimals: [boolean]
- *  thousandsSeparator: [string]
- *  unitSeparator: [string]
- *  }} [options] bytes options.
- *
- * @returns {string|number|null}
- */
+	t.deepEqual(func(1, 2), [undefined, 1, 2], 'unbound func with right args');
+	t.deepEqual(bound(1, 2, 3), [hasStrictMode ? 1 : Object(1), 2, 3], 'bound func with right args');
+	t.deepEqual(boundR(1, 2), [sentinel, 1, 2], 'bound func with receiver, with right args');
+	t.deepEqual(boundArg(2), [sentinel, 1, 2], 'bound func with receiver and arg, with right arg');
 
-function bytes(value, options) {
-  if (typeof value === 'string') {
-    return parse(value);
-  }
+	// @ts-expect-error
+	t.deepEqual(func(1, 2, 3), [undefined, 1, 2], 'unbound func with too many args');
+	// @ts-expect-error
+	t.deepEqual(bound(1, 2, 3, 4), [hasStrictMode ? 1 : Object(1), 2, 3], 'bound func with too many args');
+	// @ts-expect-error
+	t.deepEqual(boundR(1, 2, 3), [sentinel, 1, 2], 'bound func with receiver, with too many args');
+	// @ts-expect-error
+	t.deepEqual(boundArg(2, 3), [sentinel, 1, 2], 'bound func with receiver and arg, with too many args');
 
-  if (typeof value === 'number') {
-    return format(value, options);
-  }
-
-  return null;
-}
-
-/**
- * Format the given value in bytes into a string.
- *
- * If the value is negative, it is kept as such. If it is a float,
- * it is rounded.
- *
- * @param {number} value
- * @param {object} [options]
- * @param {number} [options.decimalPlaces=2]
- * @param {number} [options.fixedDecimals=false]
- * @param {string} [options.thousandsSeparator=]
- * @param {string} [options.unit=]
- * @param {string} [options.unitSeparator=]
- *
- * @returns {string|null}
- * @public
- */
-
-function format(value, options) {
-  if (!Number.isFinite(value)) {
-    return null;
-  }
-
-  var mag = Math.abs(value);
-  var thousandsSeparator = (options && options.thousandsSeparator) || '';
-  var unitSeparator = (options && options.unitSeparator) || '';
-  var decimalPlaces = (options && options.decimalPlaces !== undefined) ? options.decimalPlaces : 2;
-  var fixedDecimals = Boolean(options && options.fixedDecimals);
-  var unit = (options && options.unit) || '';
-
-  if (!unit || !map[unit.toLowerCase()]) {
-    if (mag >= map.pb) {
-      unit = 'PB';
-    } else if (mag >= map.tb) {
-      unit = 'TB';
-    } else if (mag >= map.gb) {
-      unit = 'GB';
-    } else if (mag >= map.mb) {
-      unit = 'MB';
-    } else if (mag >= map.kb) {
-      unit = 'KB';
-    } else {
-      unit = 'B';
-    }
-  }
-
-  var val = value / map[unit.toLowerCase()];
-  var str = val.toFixed(decimalPlaces);
-
-  if (!fixedDecimals) {
-    str = str.replace(formatDecimalsRegExp, '$1');
-  }
-
-  if (thousandsSeparator) {
-    str = str.split('.').map(function (s, i) {
-      return i === 0
-        ? s.replace(formatThousandsRegExp, thousandsSeparator)
-        : s
-    }).join('.');
-  }
-
-  return str + unitSeparator + unit;
-}
-
-/**
- * Parse the string value into an integer in bytes.
- *
- * If no unit is given, it is assumed the value is in bytes.
- *
- * @param {number|string} val
- *
- * @returns {number|null}
- * @public
- */
-
-function parse(val) {
-  if (typeof val === 'number' && !isNaN(val)) {
-    return val;
-  }
-
-  if (typeof val !== 'string') {
-    return null;
-  }
-
-  // Test if the string passed is valid
-  var results = parseRegExp.exec(val);
-  var floatValue;
-  var unit = 'b';
-
-  if (!results) {
-    // Nothing could be extracted from the given string
-    floatValue = parseInt(val, 10);
-    unit = 'b'
-  } else {
-    // Retrieve the value and the unit
-    floatValue = parseFloat(results[1]);
-    unit = results[4].toLowerCase();
-  }
-
-  if (isNaN(floatValue)) {
-    return null;
-  }
-
-  return Math.floor(map[unit] * floatValue);
-}
+	t.end();
+});
