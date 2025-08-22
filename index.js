@@ -1,38 +1,78 @@
+/*!
+ * escape-html
+ * Copyright(c) 2012-2013 TJ Holowaychuk
+ * Copyright(c) 2015 Andreas Lubbe
+ * Copyright(c) 2015 Tiancheng "Timothy" Gu
+ * MIT Licensed
+ */
+
 'use strict';
 
-var test = require('tape');
+/**
+ * Module variables.
+ * @private
+ */
 
-var $Object = require('../');
-var isObject = require('../isObject');
-var ToObject = require('../ToObject');
-var RequireObjectCoercible = require('..//RequireObjectCoercible');
+var matchHtmlRegExp = /["'&<>]/;
 
-test('errors', function (t) {
-	t.equal($Object, Object);
-	// @ts-expect-error
-	t['throws'](function () { ToObject(null); }, TypeError);
-	// @ts-expect-error
-	t['throws'](function () { ToObject(undefined); }, TypeError);
-	// @ts-expect-error
-	t['throws'](function () { RequireObjectCoercible(null); }, TypeError);
-	// @ts-expect-error
-	t['throws'](function () { RequireObjectCoercible(undefined); }, TypeError);
+/**
+ * Module exports.
+ * @public
+ */
 
-	t.deepEqual(RequireObjectCoercible(true), true);
-	t.deepEqual(ToObject(true), Object(true));
-	t.deepEqual(ToObject(42), Object(42));
-	var f = function () {};
-	t.equal(ToObject(f), f);
+module.exports = escapeHtml;
 
-	t.equal(isObject(undefined), false);
-	t.equal(isObject(null), false);
-	t.equal(isObject({}), true);
-	t.equal(isObject([]), true);
-	t.equal(isObject(function () {}), true);
+/**
+ * Escape special characters in the given string of html.
+ *
+ * @param  {string} string The string to escape for inserting into HTML
+ * @return {string}
+ * @public
+ */
 
-	var obj = {};
-	t.equal(RequireObjectCoercible(obj), obj);
-	t.equal(ToObject(obj), obj);
+function escapeHtml(string) {
+  var str = '' + string;
+  var match = matchHtmlRegExp.exec(str);
 
-	t.end();
-});
+  if (!match) {
+    return str;
+  }
+
+  var escape;
+  var html = '';
+  var index = 0;
+  var lastIndex = 0;
+
+  for (index = match.index; index < str.length; index++) {
+    switch (str.charCodeAt(index)) {
+      case 34: // "
+        escape = '&quot;';
+        break;
+      case 38: // &
+        escape = '&amp;';
+        break;
+      case 39: // '
+        escape = '&#39;';
+        break;
+      case 60: // <
+        escape = '&lt;';
+        break;
+      case 62: // >
+        escape = '&gt;';
+        break;
+      default:
+        continue;
+    }
+
+    if (lastIndex !== index) {
+      html += str.substring(lastIndex, index);
+    }
+
+    lastIndex = index + 1;
+    html += escape;
+  }
+
+  return lastIndex !== index
+    ? html + str.substring(lastIndex, index)
+    : html;
+}
