@@ -1,60 +1,56 @@
-/*!
- * encodeurl
- * Copyright(c) 2016 Douglas Christopher Wilson
- * MIT Licensed
- */
+'use strict';
 
-'use strict'
+var $defineProperty = require('../');
 
-/**
- * Module exports.
- * @public
- */
+var test = require('tape');
+var gOPD = require('gopd');
 
-module.exports = encodeUrl
+test('defineProperty: supported', { skip: !$defineProperty }, function (t) {
+	t.plan(4);
 
-/**
- * RegExp to match non-URL code points, *after* encoding (i.e. not including "%")
- * and including invalid escape sequences.
- * @private
- */
+	t.equal(typeof $defineProperty, 'function', 'defineProperty is supported');
+	if ($defineProperty && gOPD) { // this `if` check is just to shut TS up
+		/** @type {{ a: number, b?: number, c?: number }} */
+		var o = { a: 1 };
 
-var ENCODE_CHARS_REGEXP = /(?:[^\x21\x23-\x3B\x3D\x3F-\x5F\x61-\x7A\x7C\x7E]|%(?:[^0-9A-Fa-f]|[0-9A-Fa-f][^0-9A-Fa-f]|$))+/g
+		$defineProperty(o, 'b', { enumerable: true, value: 2 });
+		t.deepEqual(
+			gOPD(o, 'b'),
+			{
+				configurable: false,
+				enumerable: true,
+				value: 2,
+				writable: false
+			},
+			'property descriptor is as expected'
+		);
 
-/**
- * RegExp to match unmatched surrogate pair.
- * @private
- */
+		$defineProperty(o, 'c', { enumerable: false, value: 3, writable: true });
+		t.deepEqual(
+			gOPD(o, 'c'),
+			{
+				configurable: false,
+				enumerable: false,
+				value: 3,
+				writable: true
+			},
+			'property descriptor is as expected'
+		);
+	}
 
-var UNMATCHED_SURROGATE_PAIR_REGEXP = /(^|[^\uD800-\uDBFF])[\uDC00-\uDFFF]|[\uD800-\uDBFF]([^\uDC00-\uDFFF]|$)/g
+	t.equal($defineProperty, Object.defineProperty, 'defineProperty is Object.defineProperty');
 
-/**
- * String to replace unmatched surrogate pair with.
- * @private
- */
+	t.end();
+});
 
-var UNMATCHED_SURROGATE_PAIR_REPLACE = '$1\uFFFD$2'
+test('defineProperty: not supported', { skip: !!$defineProperty }, function (t) {
+	t.notOk($defineProperty, 'defineProperty is not supported');
 
-/**
- * Encode a URL to a percent-encoded form, excluding already-encoded sequences.
- *
- * This function will take an already-encoded URL and encode all the non-URL
- * code points. This function will not encode the "%" character unless it is
- * not part of a valid sequence (`%20` will be left as-is, but `%foo` will
- * be encoded as `%25foo`).
- *
- * This encode is meant to be "safe" and does not throw errors. It will try as
- * hard as it can to properly encode the given URL, including replacing any raw,
- * unpaired surrogate pairs with the Unicode replacement character prior to
- * encoding.
- *
- * @param {string} url
- * @return {string}
- * @public
- */
+	t.match(
+		typeof $defineProperty,
+		/^(?:undefined|boolean)$/,
+		'`typeof defineProperty` is `undefined` or `boolean`'
+	);
 
-function encodeUrl (url) {
-  return String(url)
-    .replace(UNMATCHED_SURROGATE_PAIR_REGEXP, UNMATCHED_SURROGATE_PAIR_REPLACE)
-    .replace(ENCODE_CHARS_REGEXP, encodeURI)
-}
+	t.end();
+});
