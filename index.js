@@ -1,15 +1,19 @@
 'use strict';
 
-var bind = require('function-bind');
-var $TypeError = require('es-errors/type');
+var GetIntrinsic = require('get-intrinsic');
 
-var $call = require('./functionCall');
-var $actualApply = require('./actualApply');
+var callBindBasic = require('call-bind-apply-helpers');
 
-/** @type {(args: [Function, thisArg?: unknown, ...args: unknown[]]) => Function} TODO FIXME, find a way to use import('.') */
-module.exports = function callBindBasic(args) {
-	if (args.length < 1 || typeof args[0] !== 'function') {
-		throw new $TypeError('a function is required');
+/** @type {(thisArg: string, searchString: string, position?: number) => number} */
+var $indexOf = callBindBasic([GetIntrinsic('%String.prototype.indexOf%')]);
+
+/** @type {import('.')} */
+module.exports = function callBoundIntrinsic(name, allowMissing) {
+	/* eslint no-extra-parens: 0 */
+
+	var intrinsic = /** @type {(this: unknown, ...args: unknown[]) => unknown} */ (GetIntrinsic(name, !!allowMissing));
+	if (typeof intrinsic === 'function' && $indexOf(name, '.prototype.') > -1) {
+		return callBindBasic(/** @type {const} */ ([intrinsic]));
 	}
-	return $actualApply(bind, $call, args);
+	return intrinsic;
 };
