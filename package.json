@@ -1,29 +1,42 @@
 {
-  "name": "ee-first",
-  "description": "return the first event in a set of ee/event pairs",
-  "version": "1.1.1",
-  "author": {
-    "name": "Jonathan Ong",
-    "email": "me@jongleberry.com",
-    "url": "http://jongleberry.com",
-    "twitter": "https://twitter.com/jongleberry"
-  },
-  "contributors": [
-    "Douglas Christopher Wilson <doug@somethingdoug.com>"
+  "name": "ejs",
+  "description": "Embedded JavaScript templates",
+  "keywords": [
+    "template",
+    "engine",
+    "ejs"
   ],
-  "license": "MIT",
-  "repository": "jonathanong/ee-first",
+  "version": "3.1.10",
+  "author": "Matthew Eernisse <mde@fleegix.org> (http://fleegix.org)",
+  "license": "Apache-2.0",
+  "bin": {
+    "ejs": "./bin/cli.js"
+  },
+  "main": "./lib/ejs.js",
+  "jsdelivr": "ejs.min.js",
+  "unpkg": "ejs.min.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mde/ejs.git"
+  },
+  "bugs": "https://github.com/mde/ejs/issues",
+  "homepage": "https://github.com/mde/ejs",
+  "dependencies": {
+    "jake": "^10.8.5"
+  },
   "devDependencies": {
-    "istanbul": "0.3.9",
-    "mocha": "2.2.5"
+    "browserify": "^16.5.1",
+    "eslint": "^6.8.0",
+    "git-directory-deploy": "^1.5.1",
+    "jsdoc": "^4.0.2",
+    "lru-cache": "^4.0.1",
+    "mocha": "^10.2.0",
+    "uglify-js": "^3.3.16"
   },
-  "files": [
-    "index.js",
-    "LICENSE"
-  ],
+  "engines": {
+    "node": ">=0.10.0"
+  },
   "scripts": {
-    "test": "mocha --reporter spec --bail --check-leaks test/",
-    "test-cov": "istanbul cover node_modules/mocha/bin/_mocha -- --reporter dot --check-leaks test/",
-    "test-travis": "istanbul cover node_modules/mocha/bin/_mocha --report lcovonly -- --reporter spec --check-leaks test/"
+    "test": "npx jake test"
   }
 }
