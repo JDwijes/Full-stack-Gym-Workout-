@@ -1,97 +1,70 @@
-3.1.2 / 2022-01-27
+1.2.2 / 2024-10-29
 ==================
 
-  * Fix return value for un-parsable strings
+* various metadata/documentation tweaks (incl. #51)
 
-3.1.1 / 2021-11-15
+
+1.2.1 / 2023-02-27
 ==================
 
-  * Fix "thousandsSeparator" incorrecting formatting fractional part
+* update annotations for allowed secret key types (#44, thanks @jyasskin!)
 
-3.1.0 / 2019-01-22
+
+1.2.0 / 2022-02-17
 ==================
 
-  * Add petabyte (`pb`) support
+* allow buffer and other node-supported types as key (#33)
+* be pickier about extra content after signed portion (#40)
+* some internal code clarity/cleanup improvements (#26)
 
-3.0.0 / 2017-08-31
+
+1.1.0 / 2018-01-18
 ==================
 
-  * Change "kB" to "KB" in format output
-  * Remove support for Node.js 0.6
-  * Remove support for ComponentJS
+* switch to built-in `crypto.timingSafeEqual` for validation instead of previous double-hash method (thank you @jodevsa!)
 
-2.5.0 / 2017-03-24
+
+1.0.7 / 2023-04-12
 ==================
 
-  * Add option "unit"
+Later release for older node.js versions. See the [v1.0.x branch notes](https://github.com/tj/node-cookie-signature/blob/v1.0.x/History.md#107--2023-04-12).
 
-2.4.0 / 2016-06-01
+
+1.0.6 / 2015-02-03
 ==================
 
-  * Add option "unitSeparator"
+* use `npm test` instead of `make test` to run tests
+* clearer assertion messages when checking input
 
-2.3.0 / 2016-02-15
+
+1.0.5 / 2014-09-05
 ==================
 
-  * Drop partial bytes on all parsed units
-  * Fix non-finite numbers to `.format` to return `null`
-  * Fix parsing byte string that looks like hex
-  * perf: hoist regular expressions
+* add license to package.json
 
-2.2.0 / 2015-11-13
+1.0.4 / 2014-06-25
 ==================
 
-  * add option "decimalPlaces"
-  * add option "fixedDecimals"
+ * corrected avoidance of timing attacks (thanks @tenbits!)
 
-2.1.0 / 2015-05-21
+1.0.3 / 2014-01-28
 ==================
 
-  * add `.format` export
-  * add `.parse` export
+ * [incorrect] fix for timing attacks
 
-2.0.2 / 2015-05-20
+1.0.2 / 2014-01-28
 ==================
 
-  * remove map recreation
-  * remove unnecessary object construction
+ * fix missing repository warning
+ * fix typo in test
 
-2.0.1 / 2015-05-07
+1.0.1 / 2013-04-15
 ==================
 
-  * fix browserify require
-  * remove node.extend dependency
+  * Revert "Changed underlying HMAC algo. to sha512."
+  * Revert "Fix for timing attacks on MAC verification."
 
-2.0.0 / 2015-04-12
+0.0.1 / 2010-01-03
 ==================
 
-  * add option "case"
-  * add option "thousandsSeparator"
-  * return "null" on invalid parse input
-  * support proper round-trip: bytes(bytes(num)) === num
-  * units no longer case sensitive when parsing
-
-1.0.0 / 2014-05-05
-==================
-
- * add negative support. fixes #6
-
-0.3.0 / 2014-03-19
-==================
-
- * added terabyte support
-
-0.2.1 / 2013-04-01
-==================
-
-  * add .component
-
-0.2.0 / 2012-10-28
-==================
-
-  * bytes(200).should.eql('200b')
-
-0.1.0 / 2012-07-04
-==================
-
-  * add bytes to string conversion [yields]
+  * Initial release
