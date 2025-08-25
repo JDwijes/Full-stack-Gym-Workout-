@@ -1,336 +1,327 @@
-/* eslint strict:off */
-/* eslint no-var: off */
-/* eslint no-redeclare: off */
-
-var stringToParts = require('./stringToParts');
-
-// These properties are special and can open client libraries to security
-// issues
-var ignoreProperties = ['__proto__', 'constructor', 'prototype'];
-
-/**
- * Returns the value of object `o` at the given `path`.
- *
- * ####Example:
- *
- *     var obj = {
- *         comments: [
- *             { title: 'exciting!', _doc: { title: 'great!' }}
- *           , { title: 'number dos' }
- *         ]
- *     }
- *
- *     mpath.get('comments.0.title', o)         // 'exciting!'
- *     mpath.get('comments.0.title', o, '_doc') // 'great!'
- *     mpath.get('comments.title', o)           // ['exciting!', 'number dos']
- *
- *     // summary
- *     mpath.get(path, o)
- *     mpath.get(path, o, special)
- *     mpath.get(path, o, map)
- *     mpath.get(path, o, special, map)
- *
- * @param {String} path
- * @param {Object} o
- * @param {String} [special] When this property name is present on any object in the path, walking will continue on the value of this property.
- * @param {Function} [map] Optional function which receives each individual found value. The value returned from `map` is used in the original values place.
+/*!
+ * proxy-addr
+ * Copyright(c) 2014-2016 Douglas Christopher Wilson
+ * MIT Licensed
  */
 
-exports.get = function(path, o, special, map) {
-  var lookup;
-
-  if ('function' == typeof special) {
-    if (special.length < 2) {
-      map = special;
-      special = undefined;
-    } else {
-      lookup = special;
-      special = undefined;
-    }
-  }
-
-  map || (map = K);
-
-  var parts = 'string' == typeof path
-    ? stringToParts(path)
-    : path;
-
-  if (!Array.isArray(parts)) {
-    throw new TypeError('Invalid `path`. Must be either string or array');
-  }
-
-  var obj = o,
-      part;
-
-  for (var i = 0; i < parts.length; ++i) {
-    part = parts[i];
-    if (typeof parts[i] !== 'string' && typeof parts[i] !== 'number') {
-      throw new TypeError('Each segment of path to `get()` must be a string or number, got ' + typeof parts[i]);
-    }
-
-    if (Array.isArray(obj) && !/^\d+$/.test(part)) {
-      // reading a property from the array items
-      var paths = parts.slice(i);
-
-      // Need to `concat()` to avoid `map()` calling a constructor of an array
-      // subclass
-      return [].concat(obj).map(function(item) {
-        return item
-          ? exports.get(paths, item, special || lookup, map)
-          : map(undefined);
-      });
-    }
-
-    if (lookup) {
-      obj = lookup(obj, part);
-    } else {
-      var _from = special && obj[special] ? obj[special] : obj;
-      obj = _from instanceof Map ?
-        _from.get(part) :
-        _from[part];
-    }
-
-    if (!obj) return map(obj);
-  }
-
-  return map(obj);
-};
+'use strict'
 
 /**
- * Returns true if `in` returns true for every piece of the path
- *
- * @param {String} path
- * @param {Object} o
+ * Module exports.
+ * @public
  */
 
-exports.has = function(path, o) {
-  var parts = typeof path === 'string' ?
-    stringToParts(path) :
-    path;
-
-  if (!Array.isArray(parts)) {
-    throw new TypeError('Invalid `path`. Must be either string or array');
-  }
-
-  var len = parts.length;
-  var cur = o;
-  for (var i = 0; i < len; ++i) {
-    if (typeof parts[i] !== 'string' && typeof parts[i] !== 'number') {
-      throw new TypeError('Each segment of path to `has()` must be a string or number, got ' + typeof parts[i]);
-    }
-    if (cur == null || typeof cur !== 'object' || !(parts[i] in cur)) {
-      return false;
-    }
-    cur = cur[parts[i]];
-  }
-
-  return true;
-};
+module.exports = proxyaddr
+module.exports.all = alladdrs
+module.exports.compile = compile
 
 /**
- * Deletes the last piece of `path`
- *
- * @param {String} path
- * @param {Object} o
+ * Module dependencies.
+ * @private
  */
 
-exports.unset = function(path, o) {
-  var parts = typeof path === 'string' ?
-    stringToParts(path) :
-    path;
-
-  if (!Array.isArray(parts)) {
-    throw new TypeError('Invalid `path`. Must be either string or array');
-  }
-
-  var len = parts.length;
-  var cur = o;
-  for (var i = 0; i < len; ++i) {
-    if (cur == null || typeof cur !== 'object' || !(parts[i] in cur)) {
-      return false;
-    }
-    if (typeof parts[i] !== 'string' && typeof parts[i] !== 'number') {
-      throw new TypeError('Each segment of path to `unset()` must be a string or number, got ' + typeof parts[i]);
-    }
-    // Disallow any updates to __proto__ or special properties.
-    if (ignoreProperties.indexOf(parts[i]) !== -1) {
-      return false;
-    }
-    if (i === len - 1) {
-      delete cur[parts[i]];
-      return true;
-    }
-    cur = cur instanceof Map ? cur.get(parts[i]) : cur[parts[i]];
-  }
-
-  return true;
-};
+var forwarded = require('forwarded')
+var ipaddr = require('ipaddr.js')
 
 /**
- * Sets the `val` at the given `path` of object `o`.
- *
- * @param {String} path
- * @param {Anything} val
- * @param {Object} o
- * @param {String} [special] When this property name is present on any object in the path, walking will continue on the value of this property.
- * @param {Function} [map] Optional function which is passed each individual value before setting it. The value returned from `map` is used in the original values place.
+ * Variables.
+ * @private
  */
 
-exports.set = function(path, val, o, special, map, _copying) {
-  var lookup;
+var DIGIT_REGEXP = /^[0-9]+$/
+var isip = ipaddr.isValid
+var parseip = ipaddr.parse
 
-  if ('function' == typeof special) {
-    if (special.length < 2) {
-      map = special;
-      special = undefined;
-    } else {
-      lookup = special;
-      special = undefined;
-    }
+/**
+ * Pre-defined IP ranges.
+ * @private
+ */
+
+var IP_RANGES = {
+  linklocal: ['169.254.0.0/16', 'fe80::/10'],
+  loopback: ['127.0.0.1/8', '::1/128'],
+  uniquelocal: ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', 'fc00::/7']
+}
+
+/**
+ * Get all addresses in the request, optionally stopping
+ * at the first untrusted.
+ *
+ * @param {Object} request
+ * @param {Function|Array|String} [trust]
+ * @public
+ */
+
+function alladdrs (req, trust) {
+  // get addresses
+  var addrs = forwarded(req)
+
+  if (!trust) {
+    // Return all addresses
+    return addrs
   }
 
-  map || (map = K);
-
-  var parts = 'string' == typeof path
-    ? stringToParts(path)
-    : path;
-
-  if (!Array.isArray(parts)) {
-    throw new TypeError('Invalid `path`. Must be either string or array');
+  if (typeof trust !== 'function') {
+    trust = compile(trust)
   }
 
-  if (null == o) return;
+  for (var i = 0; i < addrs.length - 1; i++) {
+    if (trust(addrs[i], i)) continue
 
-  for (var i = 0; i < parts.length; ++i) {
-    if (typeof parts[i] !== 'string' && typeof parts[i] !== 'number') {
-      throw new TypeError('Each segment of path to `set()` must be a string or number, got ' + typeof parts[i]);
-    }
-    // Silently ignore any updates to `__proto__`, these are potentially
-    // dangerous if using mpath with unsanitized data.
-    if (ignoreProperties.indexOf(parts[i]) !== -1) {
-      return;
-    }
+    addrs.length = i + 1
   }
 
-  // the existance of $ in a path tells us if the user desires
-  // the copying of an array instead of setting each value of
-  // the array to the one by one to matching positions of the
-  // current array. Unless the user explicitly opted out by passing
-  // false, see Automattic/mongoose#6273
-  var copy = _copying || (/\$/.test(path) && _copying !== false),
-      obj = o,
-      part;
+  return addrs
+}
 
-  for (var i = 0, len = parts.length - 1; i < len; ++i) {
-    part = parts[i];
+/**
+ * Compile argument into trust function.
+ *
+ * @param {Array|String} val
+ * @private
+ */
 
-    if ('$' == part) {
-      if (i == len - 1) {
-        break;
-      } else {
-        continue;
-      }
-    }
-
-    if (Array.isArray(obj) && !/^\d+$/.test(part)) {
-      var paths = parts.slice(i);
-      if (!copy && Array.isArray(val)) {
-        for (var j = 0; j < obj.length && j < val.length; ++j) {
-          // assignment of single values of array
-          exports.set(paths, val[j], obj[j], special || lookup, map, copy);
-        }
-      } else {
-        for (var j = 0; j < obj.length; ++j) {
-          // assignment of entire value
-          exports.set(paths, val, obj[j], special || lookup, map, copy);
-        }
-      }
-      return;
-    }
-
-    if (lookup) {
-      obj = lookup(obj, part);
-    } else {
-      var _to = special && obj[special] ? obj[special] : obj;
-      obj = _to instanceof Map ?
-        _to.get(part) :
-        _to[part];
-    }
-
-    if (!obj) return;
+function compile (val) {
+  if (!val) {
+    throw new TypeError('argument is required')
   }
 
-  // process the last property of the path
+  var trust
 
-  part = parts[len];
-
-  // use the special property if exists
-  if (special && obj[special]) {
-    obj = obj[special];
-  }
-
-  // set the value on the last branch
-  if (Array.isArray(obj) && !/^\d+$/.test(part)) {
-    if (!copy && Array.isArray(val)) {
-      _setArray(obj, val, part, lookup, special, map);
-    } else {
-      for (var j = 0; j < obj.length; ++j) {
-        var item = obj[j];
-        if (item) {
-          if (lookup) {
-            lookup(item, part, map(val));
-          } else {
-            if (item[special]) item = item[special];
-            item[part] = map(val);
-          }
-        }
-      }
-    }
+  if (typeof val === 'string') {
+    trust = [val]
+  } else if (Array.isArray(val)) {
+    trust = val.slice()
   } else {
-    if (lookup) {
-      lookup(obj, part, map(val));
-    } else if (obj instanceof Map) {
-      obj.set(part, map(val));
-    } else {
-      obj[part] = map(val);
-    }
+    throw new TypeError('unsupported trust argument')
   }
-};
 
-/*!
- * Split a string path into components delimited by '.' or
- * '[\d+]'
+  for (var i = 0; i < trust.length; i++) {
+    val = trust[i]
+
+    if (!Object.prototype.hasOwnProperty.call(IP_RANGES, val)) {
+      continue
+    }
+
+    // Splice in pre-defined range
+    val = IP_RANGES[val]
+    trust.splice.apply(trust, [i, 1].concat(val))
+    i += val.length - 1
+  }
+
+  return compileTrust(compileRangeSubnets(trust))
+}
+
+/**
+ * Compile `arr` elements into range subnets.
  *
- * #### Example:
- *     stringToParts('foo[0].bar.1'); // ['foo', '0', 'bar', '1']
+ * @param {Array} arr
+ * @private
  */
 
-exports.stringToParts = stringToParts;
+function compileRangeSubnets (arr) {
+  var rangeSubnets = new Array(arr.length)
 
-/*!
- * Recursively set nested arrays
+  for (var i = 0; i < arr.length; i++) {
+    rangeSubnets[i] = parseipNotation(arr[i])
+  }
+
+  return rangeSubnets
+}
+
+/**
+ * Compile range subnet array into trust function.
+ *
+ * @param {Array} rangeSubnets
+ * @private
  */
 
-function _setArray(obj, val, part, lookup, special, map) {
-  for (var item, j = 0; j < obj.length && j < val.length; ++j) {
-    item = obj[j];
-    if (Array.isArray(item) && Array.isArray(val[j])) {
-      _setArray(item, val[j], part, lookup, special, map);
-    } else if (item) {
-      if (lookup) {
-        lookup(item, part, map(val[j]));
-      } else {
-        if (item[special]) item = item[special];
-        item[part] = map(val[j]);
+function compileTrust (rangeSubnets) {
+  // Return optimized function based on length
+  var len = rangeSubnets.length
+  return len === 0
+    ? trustNone
+    : len === 1
+      ? trustSingle(rangeSubnets[0])
+      : trustMulti(rangeSubnets)
+}
+
+/**
+ * Parse IP notation string into range subnet.
+ *
+ * @param {String} note
+ * @private
+ */
+
+function parseipNotation (note) {
+  var pos = note.lastIndexOf('/')
+  var str = pos !== -1
+    ? note.substring(0, pos)
+    : note
+
+  if (!isip(str)) {
+    throw new TypeError('invalid IP address: ' + str)
+  }
+
+  var ip = parseip(str)
+
+  if (pos === -1 && ip.kind() === 'ipv6' && ip.isIPv4MappedAddress()) {
+    // Store as IPv4
+    ip = ip.toIPv4Address()
+  }
+
+  var max = ip.kind() === 'ipv6'
+    ? 128
+    : 32
+
+  var range = pos !== -1
+    ? note.substring(pos + 1, note.length)
+    : null
+
+  if (range === null) {
+    range = max
+  } else if (DIGIT_REGEXP.test(range)) {
+    range = parseInt(range, 10)
+  } else if (ip.kind() === 'ipv4' && isip(range)) {
+    range = parseNetmask(range)
+  } else {
+    range = null
+  }
+
+  if (range <= 0 || range > max) {
+    throw new TypeError('invalid range on address: ' + note)
+  }
+
+  return [ip, range]
+}
+
+/**
+ * Parse netmask string into CIDR range.
+ *
+ * @param {String} netmask
+ * @private
+ */
+
+function parseNetmask (netmask) {
+  var ip = parseip(netmask)
+  var kind = ip.kind()
+
+  return kind === 'ipv4'
+    ? ip.prefixLengthFromSubnetMask()
+    : null
+}
+
+/**
+ * Determine address of proxied request.
+ *
+ * @param {Object} request
+ * @param {Function|Array|String} trust
+ * @public
+ */
+
+function proxyaddr (req, trust) {
+  if (!req) {
+    throw new TypeError('req argument is required')
+  }
+
+  if (!trust) {
+    throw new TypeError('trust argument is required')
+  }
+
+  var addrs = alladdrs(req, trust)
+  var addr = addrs[addrs.length - 1]
+
+  return addr
+}
+
+/**
+ * Static trust function to trust nothing.
+ *
+ * @private
+ */
+
+function trustNone () {
+  return false
+}
+
+/**
+ * Compile trust function for multiple subnets.
+ *
+ * @param {Array} subnets
+ * @private
+ */
+
+function trustMulti (subnets) {
+  return function trust (addr) {
+    if (!isip(addr)) return false
+
+    var ip = parseip(addr)
+    var ipconv
+    var kind = ip.kind()
+
+    for (var i = 0; i < subnets.length; i++) {
+      var subnet = subnets[i]
+      var subnetip = subnet[0]
+      var subnetkind = subnetip.kind()
+      var subnetrange = subnet[1]
+      var trusted = ip
+
+      if (kind !== subnetkind) {
+        if (subnetkind === 'ipv4' && !ip.isIPv4MappedAddress()) {
+          // Incompatible IP addresses
+          continue
+        }
+
+        if (!ipconv) {
+          // Convert IP to match subnet IP kind
+          ipconv = subnetkind === 'ipv4'
+            ? ip.toIPv4Address()
+            : ip.toIPv4MappedAddress()
+        }
+
+        trusted = ipconv
+      }
+
+      if (trusted.match(subnetip, subnetrange)) {
+        return true
       }
     }
+
+    return false
   }
 }
 
-/*!
- * Returns the value passed to it.
+/**
+ * Compile trust function for single subnet.
+ *
+ * @param {Object} subnet
+ * @private
  */
 
-function K(v) {
-  return v;
+function trustSingle (subnet) {
+  var subnetip = subnet[0]
+  var subnetkind = subnetip.kind()
+  var subnetisipv4 = subnetkind === 'ipv4'
+  var subnetrange = subnet[1]
+
+  return function trust (addr) {
+    if (!isip(addr)) return false
+
+    var ip = parseip(addr)
+    var kind = ip.kind()
+
+    if (kind !== subnetkind) {
+      if (subnetisipv4 && !ip.isIPv4MappedAddress()) {
+        // Incompatible IP addresses
+        return false
+      }
+
+      // Convert IP to match subnet IP kind
+      ip = subnetisipv4
+        ? ip.toIPv4Address()
+        : ip.toIPv4MappedAddress()
+    }
+
+    return ip.match(subnetip, subnetrange)
+  }
 }
