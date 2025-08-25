@@ -1,33 +1,55 @@
-<a href="https://promisesaplus.com/"><img src="https://promisesaplus.com/assets/logo-small.png" align="right" /></a>
+# merge-descriptors
 
-# is-promise
+> Merge objects using their property descriptors
 
-  Test whether an object looks like a promises-a+ promise
+## Install
 
- [![Build Status](https://img.shields.io/travis/then/is-promise/master.svg)](https://travis-ci.org/then/is-promise)
- [![Dependency Status](https://img.shields.io/david/then/is-promise.svg)](https://david-dm.org/then/is-promise)
- [![NPM version](https://img.shields.io/npm/v/is-promise.svg)](https://www.npmjs.org/package/is-promise)
+```sh
+npm install merge-descriptors
+```
 
+## Usage
 
+```js
+import mergeDescriptors from 'merge-descriptors';
 
-## Installation
+const thing = {
+	get name() {
+		return 'John'
+	}
+}
 
-    $ npm install is-promise
+const animal = {};
 
-You can also use it client side via npm.
+mergeDescriptors(animal, thing);
+
+console.log(animal.name);
+//=> 'John'
+```
 
 ## API
 
-```typescript
-import isPromise from 'is-promise';
+### merge(destination, source, overwrite?)
 
-isPromise(Promise.resolve());//=>true
-isPromise({then:function () {...}});//=>true
-isPromise(null);//=>false
-isPromise({});//=>false
-isPromise({then: true})//=>false
-```
+Merges "own" properties from a source to a destination object, including non-enumerable and accessor-defined properties. It retains original values and descriptors, ensuring the destination receives a complete and accurate copy of the source's properties.
 
-## License
+Returns the modified destination object.
 
-  MIT
+#### destination
+
+Type: `object`
+
+The object to receive properties.
+
+#### source
+
+Type: `object`
+
+The object providing properties.
+
+#### overwrite
+
+Type: `boolean`\
+Default: `true`
+
+A boolean to control overwriting of existing properties.

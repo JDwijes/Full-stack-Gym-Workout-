@@ -1,29 +1,11 @@
-declare module "kareem" {
-  export default class Kareem {
-    static skipWrappedFunction(): SkipWrappedFunction;
-    static overwriteMiddlewareResult(): OverwriteMiddlewareResult;
+/**
+Merges "own" properties from a source to a destination object, including non-enumerable and accessor-defined properties. It retains original values and descriptors, ensuring the destination receives a complete and accurate copy of the source's properties.
 
-    pre(name: string | RegExp, fn: Function): this;
-    pre(name: string | RegExp, options: Record<string, any>, fn: Function, error?: any, unshift?: boolean): this;
-    post(name: string | RegExp, fn: Function): this;
-    post(name: string | RegExp, options: Record<string, any>, fn: Function, unshift?: boolean): this;
+@param destination - The object to receive properties.
+@param source - The object providing properties.
+@param overwrite - Optional boolean to control overwriting of existing properties. Defaults to true.
+@returns The modified destination object.
+*/
+declare function mergeDescriptors<T, U>(destination: T, source: U, overwrite?: boolean): T & U;
 
-    clone(): Kareem;
-    merge(other: Kareem, clone?: boolean): this;
-
-    createWrapper(name: string, fn: Function, context?: any, options?: Record<string, any>): Function;
-    createWrapperSync(name: string, fn: Function): Function;
-    hasHooks(name: string): boolean;
-    filter(fn: Function): Kareem;
-
-    wrap(name: string, fn: Function, context: any, args: any[], options?: Record<string, any>): Function;
-
-    execPostSync(name: string, context: any, args: any[]): any;
-    execPost(name: string, context: any, args: any[], options?: Record<string, any>, callback?: Function): void;
-    execPreSync(name: string, context: any, args: any[]): any;
-    execPre(name: string, context: any, args: any[], callback?: Function): void;
-  }
-
-  class SkipWrappedFunction {}
-  class OverwriteMiddlewareResult {}
-}
+export = mergeDescriptors;
