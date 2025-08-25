@@ -1,57 +1,46 @@
-# forwarded
+# function-bind <sup>[![Version Badge][npm-version-svg]][package-url]</sup>
 
-[![NPM Version][npm-image]][npm-url]
-[![NPM Downloads][downloads-image]][downloads-url]
-[![Node.js Version][node-version-image]][node-version-url]
-[![Build Status][ci-image]][ci-url]
-[![Test Coverage][coveralls-image]][coveralls-url]
+[![github actions][actions-image]][actions-url]
+<!--[![coverage][codecov-image]][codecov-url]-->
+[![dependency status][deps-svg]][deps-url]
+[![dev dependency status][dev-deps-svg]][dev-deps-url]
+[![License][license-image]][license-url]
+[![Downloads][downloads-image]][downloads-url]
 
-Parse HTTP X-Forwarded-For header
+[![npm badge][npm-badge-png]][package-url]
+
+Implementation of function.prototype.bind
+
+Old versions of phantomjs, Internet Explorer < 9, and node < 0.6 don't support `Function.prototype.bind`.
+
+## Example
+
+```js
+Function.prototype.bind = require("function-bind")
+```
 
 ## Installation
 
-This is a [Node.js](https://nodejs.org/en/) module available through the
-[npm registry](https://www.npmjs.com/). Installation is done using the
-[`npm install` command](https://docs.npmjs.com/getting-started/installing-npm-packages-locally):
+`npm install function-bind`
 
-```sh
-$ npm install forwarded
-```
+## Contributors
 
-## API
+ - Raynos
 
-```js
-var forwarded = require('forwarded')
-```
+## MIT Licenced
 
-### forwarded(req)
-
-```js
-var addresses = forwarded(req)
-```
-
-Parse the `X-Forwarded-For` header from the request. Returns an array
-of the addresses, including the socket address for the `req`, in reverse
-order (i.e. index `0` is the socket address and the last index is the
-furthest address, typically the end-user).
-
-## Testing
-
-```sh
-$ npm test
-```
-
-## License
-
-[MIT](LICENSE)
-
-[ci-image]: https://badgen.net/github/checks/jshttp/forwarded/master?label=ci
-[ci-url]: https://github.com/jshttp/forwarded/actions?query=workflow%3Aci
-[npm-image]: https://img.shields.io/npm/v/forwarded.svg
-[npm-url]: https://npmjs.org/package/forwarded
-[node-version-image]: https://img.shields.io/node/v/forwarded.svg
-[node-version-url]: https://nodejs.org/en/download/
-[coveralls-image]: https://img.shields.io/coveralls/jshttp/forwarded/master.svg
-[coveralls-url]: https://coveralls.io/r/jshttp/forwarded?branch=master
-[downloads-image]: https://img.shields.io/npm/dm/forwarded.svg
-[downloads-url]: https://npmjs.org/package/forwarded
+[package-url]: https://npmjs.org/package/function-bind
+[npm-version-svg]: https://versionbadg.es/Raynos/function-bind.svg
+[deps-svg]: https://david-dm.org/Raynos/function-bind.svg
+[deps-url]: https://david-dm.org/Raynos/function-bind
+[dev-deps-svg]: https://david-dm.org/Raynos/function-bind/dev-status.svg
+[dev-deps-url]: https://david-dm.org/Raynos/function-bind#info=devDependencies
+[npm-badge-png]: https://nodei.co/npm/function-bind.png?downloads=true&stars=true
+[license-image]: https://img.shields.io/npm/l/function-bind.svg
+[license-url]: LICENSE
+[downloads-image]: https://img.shields.io/npm/dm/function-bind.svg
+[downloads-url]: https://npm-stat.com/charts.html?package=function-bind
+[codecov-image]: https://codecov.io/gh/Raynos/function-bind/branch/main/graphs/badge.svg
+[codecov-url]: https://app.codecov.io/gh/Raynos/function-bind/
+[actions-image]: https://img.shields.io/endpoint?url=https://github-actions-badge-u3jn4tfpocch.runkit.sh/Raynos/function-bind
+[actions-url]: https://github.com/Raynos/function-bind/actions
