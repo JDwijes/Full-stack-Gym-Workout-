@@ -1,80 +1,39 @@
-/*!
- * body-parser
- * Copyright(c) 2014-2015 Douglas Christopher Wilson
- * MIT Licensed
- */
+'use strict';
 
-'use strict'
+const CastError = require('../../error/cast');
+const castBoolean = require('../../cast/boolean');
+const castString = require('../../cast/string');
 
 /**
- * Module dependencies.
- */
-
-var debug = require('debug')('body-parser:text')
-var isFinished = require('on-finished').isFinished
-var read = require('../read')
-var typeis = require('type-is')
-var { getCharset, normalizeOptions } = require('../utils')
-
-/**
- * Module exports.
- */
-
-module.exports = text
-
-/**
- * Create a middleware to parse text bodies.
+ * Casts val to an object suitable for `$text`. Throws an error if the object
+ * can't be casted.
  *
- * @param {object} [options]
- * @return {function}
- * @api public
+ * @param {Any} val value to cast
+ * @param {String} [path] path to associate with any errors that occured
+ * @return {Object} casted object
+ * @see https://www.mongodb.com/docs/manual/reference/operator/query/text/
+ * @api private
  */
 
-function text (options) {
-  var { inflate, limit, verify, shouldParse } = normalizeOptions(options, 'text/plain')
-
-  var defaultCharset = options?.defaultCharset || 'utf-8'
-
-  function parse (buf) {
-    return buf
+module.exports = function castTextSearch(val, path) {
+  if (val == null || typeof val !== 'object') {
+    throw new CastError('$text', val, path);
   }
 
-  return function textParser (req, res, next) {
-    if (isFinished(req)) {
-      debug('body already parsed')
-      next()
-      return
-    }
-
-    if (!('body' in req)) {
-      req.body = undefined
-    }
-
-    // skip requests without bodies
-    if (!typeis.hasBody(req)) {
-      debug('skip empty body')
-      next()
-      return
-    }
-
-    debug('content-type %j', req.headers['content-type'])
-
-    // determine if request should be parsed
-    if (!shouldParse(req)) {
-      debug('skip parsing')
-      next()
-      return
-    }
-
-    // get charset
-    var charset = getCharset(req) || defaultCharset
-
-    // read
-    read(req, res, next, parse, debug, {
-      encoding: charset,
-      inflate,
-      limit,
-      verify
-    })
+  if (val.$search != null) {
+    val.$search = castString(val.$search, path + '.$search');
   }
-}
+  if (val.$language != null) {
+    val.$language = castString(val.$language, path + '.$language');
+  }
+  if (val.$caseSensitive != null) {
+    val.$caseSensitive = castBoolean(val.$caseSensitive,
+      path + '.$castSensitive');
+  }
+  if (val.$diacriticSensitive != null) {
+    val.$diacriticSensitive = castBoolean(val.$diacriticSensitive,
+      path + '.$diacriticSensitive');
+  }
+
+  return val;
+};
