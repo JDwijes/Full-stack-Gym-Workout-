@@ -1,84 +1,147 @@
-## FileList
+# finalhandler
 
-A FileList is a lazy-evaluated list of files. When given a list
-of glob patterns for possible files to be included in the file
-list, instead of searching the file structures to find the files,
-a FileList holds the pattern for latter use.
+[![NPM Version][npm-image]][npm-url]
+[![NPM Downloads][downloads-image]][downloads-url]
+[![Node.js Version][node-image]][node-url]
+[![Build Status][github-actions-ci-image]][github-actions-ci-url]
+[![Test Coverage][coveralls-image]][coveralls-url]
 
-This allows you to define a FileList to match any number of
-files, but only search out the actual files when then FileList
-itself is actually used. The key is that the first time an
-element of the FileList/Array is requested, the pending patterns
-are resolved into a real list of file names.
+Node.js function to invoke as the final step to respond to HTTP request.
 
-### Usage
+## Installation
 
-Add files to the list with the `include` method. You can add glob
-patterns, individual files, or RegExp objects. When the Array
-methods are invoked on the FileList, these items are resolved to
-an actual list of files.
+This is a [Node.js](https://nodejs.org/en/) module available through the
+[npm registry](https://www.npmjs.com/). Installation is done using the
+[`npm install` command](https://docs.npmjs.com/getting-started/installing-npm-packages-locally):
 
-```javascript
-var fl = new FileList();
-fl.include('test/*.js');
-fl.exclude('test/helpers.js');
+```sh
+$ npm install finalhandler
 ```
 
-Use the `exclude` method to override inclusions. You can use this
-when your inclusions are too broad.
+## API
 
-### Array methods
+```js
+var finalhandler = require('finalhandler')
+```
 
-FileList has lazy-evaluated versions of most of the array
-methods, including the following:
+### finalhandler(req, res, [options])
 
-* join
-* pop
-* push
-* concat
-* reverse
-* shift
-* unshift
-* slice
-* splice
-* sort
-* filter
-* forEach
-* some
-* every
-* map
-* indexOf
-* lastIndexOf
-* reduce
-* reduceRight
+Returns function to be invoked as the final step for the given `req` and `res`.
+This function is to be invoked as `fn(err)`. If `err` is falsy, the handler will
+write out a 404 response to the `res`. If it is truthy, an error response will
+be written out to the `res` or `res` will be terminated if a response has already
+started.
 
-When you call one of these methods, the items in the FileList
-will be resolved to the full list of files, and the method will
-be invoked on that result.
+When an error is written, the following information is added to the response:
 
-### Special `length` method
+  * The `res.statusCode` is set from `err.status` (or `err.statusCode`). If
+    this value is outside the 4xx or 5xx range, it will be set to 500.
+  * The `res.statusMessage` is set according to the status code.
+  * The body will be the HTML of the status code message if `env` is
+    `'production'`, otherwise will be `err.stack`.
+  * Any headers specified in an `err.headers` object.
 
-`length`: FileList includes a length *method* (instead of a
-property) which returns the number of actual files in the list
-once it's been resolved.
+The final handler will also unpipe anything from `req` when it is invoked.
 
-### FileList-specific methods
+#### options.env
 
-`include`: Add a filename/glob/regex to the list
+By default, the environment is determined by `NODE_ENV` variable, but it can be
+overridden by this option.
 
-`exclude`: Override inclusions by excluding a filename/glob/regex
+#### options.onerror
 
-`resolve`: Resolve the items in the FileList to the full list of
-files. This method is invoked automatically when one of the array
-methods is called.
+Provide a function to be called with the `err` when it exists. Can be used for
+writing errors to a central location without excessive function generation. Called
+as `onerror(err, req, res)`.
 
-`toArray`: Immediately resolves the list of items, and returns an
-actual array of filepaths.
+## Examples
 
-`clearInclusions`: Clears any pending items -- must be used
-before resolving the list.
+### always 404
 
-`clearExclusions`: Clears the list of exclusions rules.
+```js
+var finalhandler = require('finalhandler')
+var http = require('http')
 
+var server = http.createServer(function (req, res) {
+  var done = finalhandler(req, res)
+  done()
+})
 
+server.listen(3000)
+```
 
+### perform simple action
+
+```js
+var finalhandler = require('finalhandler')
+var fs = require('fs')
+var http = require('http')
+
+var server = http.createServer(function (req, res) {
+  var done = finalhandler(req, res)
+
+  fs.readFile('index.html', function (err, buf) {
+    if (err) return done(err)
+    res.setHeader('Content-Type', 'text/html')
+    res.end(buf)
+  })
+})
+
+server.listen(3000)
+```
+
+### use with middleware-style functions
+
+```js
+var finalhandler = require('finalhandler')
+var http = require('http')
+var serveStatic = require('serve-static')
+
+var serve = serveStatic('public')
+
+var server = http.createServer(function (req, res) {
+  var done = finalhandler(req, res)
+  serve(req, res, done)
+})
+
+server.listen(3000)
+```
+
+### keep log of all errors
+
+```js
+var finalhandler = require('finalhandler')
+var fs = require('fs')
+var http = require('http')
+
+var server = http.createServer(function (req, res) {
+  var done = finalhandler(req, res, { onerror: logerror })
+
+  fs.readFile('index.html', function (err, buf) {
+    if (err) return done(err)
+    res.setHeader('Content-Type', 'text/html')
+    res.end(buf)
+  })
+})
+
+server.listen(3000)
+
+function logerror (err) {
+  console.error(err.stack || err.toString())
+}
+```
+
+## License
+
+[MIT](LICENSE)
+
+[npm-image]: https://img.shields.io/npm/v/finalhandler.svg
+[npm-url]: https://npmjs.org/package/finalhandler
+[node-image]: https://img.shields.io/node/v/finalhandler.svg
+[node-url]: https://nodejs.org/en/download
+[coveralls-image]: https://img.shields.io/coveralls/pillarjs/finalhandler.svg
+[coveralls-url]: https://coveralls.io/r/pillarjs/finalhandler?branch=master
+[downloads-image]: https://img.shields.io/npm/dm/finalhandler.svg
+[downloads-url]: https://npmjs.org/package/finalhandler
+[github-actions-ci-image]: https://github.com/pillarjs/finalhandler/actions/workflows/ci.yml/badge.svg
+[github-actions-ci-url]: https://github.com/pillarjs/finalhandler/actions/workflows/ci.yml
