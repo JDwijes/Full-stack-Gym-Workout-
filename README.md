@@ -1,62 +1,76 @@
-# side-channel-list <sup>[![Version Badge][npm-version-svg]][package-url]</sup>
+# tr46
 
-[![github actions][actions-image]][actions-url]
-[![coverage][codecov-image]][codecov-url]
-[![License][license-image]][license-url]
-[![Downloads][downloads-image]][downloads-url]
+An JavaScript implementation of [Unicode Technical Standard #46: Unicode IDNA Compatibility Processing](https://unicode.org/reports/tr46/).
 
-[![npm badge][npm-badge-png]][package-url]
+## API
 
-Store information about any JS value in a side channel, using a linked list.
+### `toASCII(domainName[, options])`
 
-Warning: this implementation will leak memory until you `delete` the `key`.
-Use [`side-channel`](https://npmjs.com/side-channel) for the best available strategy.
+Converts a string of Unicode symbols to a case-folded Punycode string of ASCII symbols.
 
-## Getting started
+Available options:
 
-```sh
-npm install --save side-channel-list
-```
+* [`checkBidi`](#checkbidi)
+* [`checkHyphens`](#checkhyphens)
+* [`checkJoiners`](#checkjoiners)
+* [`ignoreInvalidPunycode`](#ignoreinvalidpunycode)
+* [`transitionalProcessing`](#transitionalprocessing)
+* [`useSTD3ASCIIRules`](#usestd3asciirules)
+* [`verifyDNSLength`](#verifydnslength)
 
-## Usage/Examples
+### `toUnicode(domainName[, options])`
 
-```js
-const assert = require('assert');
-const getSideChannelList = require('side-channel-list');
+Converts a case-folded Punycode string of ASCII symbols to a string of Unicode symbols.
 
-const channel = getSideChannelList();
+Available options:
 
-const key = {};
-assert.equal(channel.has(key), false);
-assert.throws(() => channel.assert(key), TypeError);
+* [`checkBidi`](#checkbidi)
+* [`checkHyphens`](#checkhyphens)
+* [`checkJoiners`](#checkjoiners)
+* [`ignoreInvalidPunycode`](#ignoreinvalidpunycode)
+* [`transitionalProcessing`](#transitionalprocessing)
+* [`useSTD3ASCIIRules`](#usestd3asciirules)
 
-channel.set(key, 42);
+## Options
 
-channel.assert(key); // does not throw
-assert.equal(channel.has(key), true);
-assert.equal(channel.get(key), 42);
+### `checkBidi`
 
-channel.delete(key);
-assert.equal(channel.has(key), false);
-assert.throws(() => channel.assert(key), TypeError);
-```
+Type: `boolean`
+Default value: `false`
+When set to `true`, any bi-directional text within the input will be checked for validation.
 
-## Tests
+### `checkHyphens`
 
-Clone the repo, `npm install`, and run `npm test`
+Type: `boolean`
+Default value: `false`
+When set to `true`, the positions of any hyphen characters within the input will be checked for validation.
 
-[package-url]: https://npmjs.org/package/side-channel-list
-[npm-version-svg]: https://versionbadg.es/ljharb/side-channel-list.svg
-[deps-svg]: https://david-dm.org/ljharb/side-channel-list.svg
-[deps-url]: https://david-dm.org/ljharb/side-channel-list
-[dev-deps-svg]: https://david-dm.org/ljharb/side-channel-list/dev-status.svg
-[dev-deps-url]: https://david-dm.org/ljharb/side-channel-list#info=devDependencies
-[npm-badge-png]: https://nodei.co/npm/side-channel-list.png?downloads=true&stars=true
-[license-image]: https://img.shields.io/npm/l/side-channel-list.svg
-[license-url]: LICENSE
-[downloads-image]: https://img.shields.io/npm/dm/side-channel-list.svg
-[downloads-url]: https://npm-stat.com/charts.html?package=side-channel-list
-[codecov-image]: https://codecov.io/gh/ljharb/side-channel-list/branch/main/graphs/badge.svg
-[codecov-url]: https://app.codecov.io/gh/ljharb/side-channel-list/
-[actions-image]: https://img.shields.io/endpoint?url=https://github-actions-badge-u3jn4tfpocch.runkit.sh/ljharb/side-channel-list
-[actions-url]: https://github.com/ljharb/side-channel-list/actions
+### `checkJoiners`
+
+Type: `boolean`
+Default value: `false`
+When set to `true`, any word joiner characters within the input will be checked for validation.
+
+### `ignoreInvalidPunycode`
+
+Type: `boolean`
+Default value: `false`
+When set to `true`, invalid Punycode strings within the input will be allowed.
+
+### `transitionalProcessing`
+
+Type: `boolean`
+Default value: `false`
+When set to `true`, uses [transitional (compatibility) processing](https://unicode.org/reports/tr46/#Compatibility_Processing) of the deviation characters.
+
+### `useSTD3ASCIIRules`
+
+Type: `boolean`
+Default value: `false`
+When set to `true`, input will be validated according to [STD3 Rules](http://unicode.org/reports/tr46/#STD3_Rules).
+
+### `verifyDNSLength`
+
+Type: `boolean`
+Default value: `false`
+When set to `true`, the length of each DNS label within the input will be checked for validation.
