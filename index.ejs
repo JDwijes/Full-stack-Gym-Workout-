@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gym Workout Records</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Gym Workout Records</h1>
+        <a href="/workout/new" class="btn">Add New Workout</a>
+
+        <h2>Workout History</h2>
+        <ul class="workout-list">
+            <% workouts.forEach(workout => { %>
+                <li class="workout-item">
+                    <div>
+                        <strong><%= workout.exercise %></strong>
+                        <span><%= workout.sets %> sets x <%= workout.reps %> reps @ <%= workout.weight %> kg</span>
+                    </div>
+                </li>
+            <% }) %>
+        </ul>
+    </div>
+</body>
+</html>

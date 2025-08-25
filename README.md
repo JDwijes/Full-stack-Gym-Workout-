@@ -1,76 +1,36 @@
-# tr46
+# wrappy
 
-An JavaScript implementation of [Unicode Technical Standard #46: Unicode IDNA Compatibility Processing](https://unicode.org/reports/tr46/).
+Callback wrapping utility
 
-## API
+## USAGE
 
-### `toASCII(domainName[, options])`
+```javascript
+var wrappy = require("wrappy")
 
-Converts a string of Unicode symbols to a case-folded Punycode string of ASCII symbols.
+// var wrapper = wrappy(wrapperFunction)
 
-Available options:
+// make sure a cb is called only once
+// See also: http://npm.im/once for this specific use case
+var once = wrappy(function (cb) {
+  var called = false
+  return function () {
+    if (called) return
+    called = true
+    return cb.apply(this, arguments)
+  }
+})
 
-* [`checkBidi`](#checkbidi)
-* [`checkHyphens`](#checkhyphens)
-* [`checkJoiners`](#checkjoiners)
-* [`ignoreInvalidPunycode`](#ignoreinvalidpunycode)
-* [`transitionalProcessing`](#transitionalprocessing)
-* [`useSTD3ASCIIRules`](#usestd3asciirules)
-* [`verifyDNSLength`](#verifydnslength)
+function printBoo () {
+  console.log('boo')
+}
+// has some rando property
+printBoo.iAmBooPrinter = true
 
-### `toUnicode(domainName[, options])`
+var onlyPrintOnce = once(printBoo)
 
-Converts a case-folded Punycode string of ASCII symbols to a string of Unicode symbols.
+onlyPrintOnce() // prints 'boo'
+onlyPrintOnce() // does nothing
 
-Available options:
-
-* [`checkBidi`](#checkbidi)
-* [`checkHyphens`](#checkhyphens)
-* [`checkJoiners`](#checkjoiners)
-* [`ignoreInvalidPunycode`](#ignoreinvalidpunycode)
-* [`transitionalProcessing`](#transitionalprocessing)
-* [`useSTD3ASCIIRules`](#usestd3asciirules)
-
-## Options
-
-### `checkBidi`
-
-Type: `boolean`
-Default value: `false`
-When set to `true`, any bi-directional text within the input will be checked for validation.
-
-### `checkHyphens`
-
-Type: `boolean`
-Default value: `false`
-When set to `true`, the positions of any hyphen characters within the input will be checked for validation.
-
-### `checkJoiners`
-
-Type: `boolean`
-Default value: `false`
-When set to `true`, any word joiner characters within the input will be checked for validation.
-
-### `ignoreInvalidPunycode`
-
-Type: `boolean`
-Default value: `false`
-When set to `true`, invalid Punycode strings within the input will be allowed.
-
-### `transitionalProcessing`
-
-Type: `boolean`
-Default value: `false`
-When set to `true`, uses [transitional (compatibility) processing](https://unicode.org/reports/tr46/#Compatibility_Processing) of the deviation characters.
-
-### `useSTD3ASCIIRules`
-
-Type: `boolean`
-Default value: `false`
-When set to `true`, input will be validated according to [STD3 Rules](http://unicode.org/reports/tr46/#STD3_Rules).
-
-### `verifyDNSLength`
-
-Type: `boolean`
-Default value: `false`
-When set to `true`, the length of each DNS label within the input will be checked for validation.
+// random property is retained!
+assert.equal(onlyPrintOnce.iAmBooPrinter, true)
+```
