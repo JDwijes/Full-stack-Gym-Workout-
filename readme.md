@@ -1,29 +1,33 @@
-# saslprep
+<a href="https://promisesaplus.com/"><img src="https://promisesaplus.com/assets/logo-small.png" align="right" /></a>
 
-_Note: This is a fork of the original [`saslprep`](https://www.npmjs.com/package/saslprep) npm package
-and provides equivalent functionality._
+# is-promise
 
-Stringprep Profile for User Names and Passwords, [rfc4013](https://tools.ietf.org/html/rfc4013)
+  Test whether an object looks like a promises-a+ promise
 
-### Usage
+ [![Build Status](https://img.shields.io/travis/then/is-promise/master.svg)](https://travis-ci.org/then/is-promise)
+ [![Dependency Status](https://img.shields.io/david/then/is-promise.svg)](https://david-dm.org/then/is-promise)
+ [![NPM version](https://img.shields.io/npm/v/is-promise.svg)](https://www.npmjs.org/package/is-promise)
 
-```js
-const saslprep = require('@mongodb-js/saslprep');
 
-saslprep('password\u00AD'); // password
-saslprep('password\u0007'); // Error: prohibited character
+
+## Installation
+
+    $ npm install is-promise
+
+You can also use it client side via npm.
+
+## API
+
+```typescript
+import isPromise from 'is-promise';
+
+isPromise(Promise.resolve());//=>true
+isPromise({then:function () {...}});//=>true
+isPromise(null);//=>false
+isPromise({});//=>false
+isPromise({then: true})//=>false
 ```
-
-### API
-
-##### `saslprep(input: String, opts: Options): String`
-
-Normalize user name or password.
-
-##### `Options.allowUnassigned: bool`
-
-A special behavior for unassigned code points, see https://tools.ietf.org/html/rfc4013#section-2.5. Disabled by default.
 
 ## License
 
-MIT, 2017-2019 (c) Dmitriy Tsvettsikh
+  MIT
